@@ -78,6 +78,10 @@ public class TypeResolver {
 
     public Method findMethod(final MethodCallExpr methodCall) {
         MethodDeclaration methodDeclaration = findMethodDeclaration(methodCall);
+        if(methodDeclaration == null) {
+            System.out.println("methodDeclaration null");
+            return null;
+        }
         ResolvedType resolvedReturnType = getJavaParserFacade().convertToUsage(methodDeclaration.getType());
         ResolvedReferenceTypeDeclaration callerType = findMethodCallerType(methodCall);
         ClassOrInterfaceDeclaration parent = toClassOrInterfaceDeclaration(callerType);
@@ -157,7 +161,7 @@ public class TypeResolver {
         } else if (referenceTypeDeclaration instanceof JavaParserInterfaceDeclaration) {
             classOrInterfaceDeclaration = ((JavaParserInterfaceDeclaration) referenceTypeDeclaration).getWrappedNode();
         } else {
-            System.out.println("Unsupported type: " + referenceTypeDeclaration.getQualifiedName());
+            System.out.println("Unsupported type: " + referenceTypeDeclaration);
             return null;
         }
 
@@ -171,6 +175,10 @@ public class TypeResolver {
 
     public MethodDeclaration findMethodDeclaration(final String methodName, final List<String>
             parameterTypes, final ClassOrInterfaceDeclaration parent) {
+        if(parent == null) {
+            System.out.println("Parent null");
+            return null;
+        }
 
         List<MethodDeclaration> methodDeclarations = parent
                 .getMethodsBySignature(methodName, parameterTypes.toArray(new String[0]));

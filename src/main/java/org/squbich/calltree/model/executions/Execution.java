@@ -15,4 +15,13 @@ public class Execution implements Executable {
         this.callExpression = callExpression;
       //  this.method = method;
     }
+
+    public String printTree(String offset) {
+        return offset + callExpression;
+    }
+
+    @Override
+    public String toString() {
+        return callExpression;
+    }
 }

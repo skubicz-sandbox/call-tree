@@ -21,7 +21,25 @@ public class AbstractMethodExecution extends Execution {
         this.method = method;
     }
 
-//    public static class AbstractMethodExecutionBuilder extends MethodExecutionBuilder {
+    @Override
+    public String printTree(String offset) {
+        StringBuilder tree = new StringBuilder();
+//        tree.append(offset);
+//        tree.append(getCallExpression());
+//
+        tree.append(offset + "[implementations]");
+        if (implementationExecutions != null) {
+            implementationExecutions.forEach(execution -> {
+                tree.append("\n");
+             //   tree.append(offset);
+                tree.append(execution.printTree(offset));
+            //    tree.append("\n");
+            });
+        }
+        return tree.toString();
+    }
+
+    //    public static class AbstractMethodExecutionBuilder extends MethodExecutionBuilder {
 //        AbstractMethodExecutionBuilder() {
 //            super();
 //        }

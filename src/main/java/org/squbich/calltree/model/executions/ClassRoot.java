@@ -11,7 +11,23 @@ import java.util.List;
  */
 @Getter
 @AllArgsConstructor
-public class ClassRoot implements Executable {
+public class ClassRoot {
+    public static final String IDENT = "    ";
     private QualifiedName className;
     private List<MethodRoot> methods;
+
+    public String printTree(String offset) {
+        StringBuilder tree = new StringBuilder();
+        tree.append(offset);
+        tree.append(className);
+        tree.append("\n");
+        if (methods != null) {
+            methods.forEach(methodRoot -> {
+            //    tree.append(offset);
+                tree.append(methodRoot.printTree(offset + IDENT));
+             //   tree.append("\n");
+            });
+        }
+        return tree.toString();
+    }
 }

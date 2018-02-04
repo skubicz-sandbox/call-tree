@@ -1,5 +1,7 @@
 package org.squbich.calltree.resolver;
 
+import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.BinaryExpr;
@@ -57,6 +59,21 @@ public class HierarchyVisitor extends GenericVisitorAdapter<List<Execution>, Obj
         }
 
 
+    }
+
+    @Override
+    public List<Execution> visit(NodeList n, Object arg) {
+        List<Execution> results = null;
+        for (final Object v : n) {
+            List<Execution> executions = ((Node) v).accept(this, arg);
+            if (executions != null) {
+                if(results == null) {
+                    results = new ArrayList<>();
+                }
+                results.addAll(executions);
+            }
+        }
+        return results;
     }
 
     private List<Execution> findMethodExecutions(MethodCallExpr methodCall, Method currentMethod) {

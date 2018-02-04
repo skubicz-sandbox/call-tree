@@ -27,4 +27,21 @@ public class MethodExecution extends Execution {
     public String toString() {
         return getCallExpression();
     }
+
+    @Override
+    public String printTree(String offset) {
+        StringBuilder tree = new StringBuilder();
+        tree.append(offset);
+        //    tree.append(method);
+        tree.append(getCallExpression());
+        if (getExecutions() != null) {
+            getExecutions().forEach(execution -> {
+                tree.append("\n");
+            //    tree.append(offset);
+                tree.append(execution.printTree(offset + ClassRoot.IDENT));
+            //    tree.append("\n");
+            });
+        }
+        return tree.toString();
+    }
 }

@@ -8,7 +8,6 @@ import org.squbich.calltree.model.code.JavaFile;
 import org.squbich.calltree.model.code.Method;
 import org.squbich.calltree.model.code.QualifiedName;
 import org.squbich.calltree.model.executions.ClassRoot;
-import org.squbich.calltree.model.executions.Executable;
 import org.squbich.calltree.model.executions.Execution;
 import org.squbich.calltree.model.executions.MethodRoot;
 
@@ -23,19 +22,11 @@ public class CallHierarchy {
     private TypeResolver typeResolver;
 
     public Object resolveHierarchy(final JavaFile javaFile) {
-        ClassOrInterfaceDeclaration classOrInterfaceDeclaration = typeResolver.toDeclaration(javaFile);
-        Object s = new HierarchyVisitorOld(typeResolver).visit(classOrInterfaceDeclaration, typeResolver.getJavaParserFacade());
-
-        return s;
-    }
-
-    public Object resolveHierarchy2(final JavaFile javaFile) {
         ClassOrInterfaceDeclaration declaration = typeResolver.toDeclaration(javaFile);
         List<MethodRoot> methods = new ArrayList<>();
         declaration.getMethods().forEach(bodyDeclaration -> {
             if (bodyDeclaration != null) {
                 List<Execution> calls = bodyDeclaration.accept(new HierarchyVisitor(typeResolver), null);
-               // Executable s = new HierarchyVisitorOld(typeResolver).visit(bodyDeclaration, typeResolver.getJavaParserFacade());
 
                 ResolvedType type = typeResolver.getJavaParserFacade().getTypeOfThisIn(declaration);
 
@@ -62,8 +53,10 @@ public class CallHierarchy {
         });
         //List<?> calls = (List) declaration.getMembers().accept(this, null);
 
-        QualifiedName className = QualifiedName.of(declaration.getName().asString());
-        ClassRoot classRoot = new ClassRoot(className, methods);
+        ClassRoot classRoot = new ClassRoot(javaFile.getQualifiedName(), methods);
+        System.out.println("-----------");
+        System.out.println(classRoot.printTree(""));
+        System.out.println("-----------");
 
         return classRoot;
     }
