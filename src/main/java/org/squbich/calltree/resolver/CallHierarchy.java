@@ -21,7 +21,7 @@ import java.util.List;
 public class CallHierarchy {
     private TypeResolver typeResolver;
 
-    public Object resolveHierarchy(final JavaFile javaFile) {
+    public ClassRoot resolveHierarchy(final JavaFile javaFile) {
         ClassOrInterfaceDeclaration declaration = typeResolver.toDeclaration(javaFile);
         List<MethodRoot> methods = new ArrayList<>();
         declaration.getMethods().forEach(bodyDeclaration -> {
@@ -44,7 +44,8 @@ public class CallHierarchy {
                     parent = ClassDescriptor.builder().qualifiedName(className).comment(comment).build();
                 }
 
-                Method method = Method.builder().name(bodyDeclaration.getNameAsString()).parentClass(parent).build();
+                //Method method = Method.builder().name(bodyDeclaration.getNameAsString()).parentClass(parent).build();
+                Method method = typeResolver.toMethod(bodyDeclaration);
                 MethodRoot methodRoot = new MethodRoot(method, calls);
                 methods.add(methodRoot);
 

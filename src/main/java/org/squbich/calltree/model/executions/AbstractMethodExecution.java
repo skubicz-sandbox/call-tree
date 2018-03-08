@@ -22,6 +22,10 @@ public class AbstractMethodExecution extends Execution {
     }
 
     @Override
+    public  List<Execution> getChildren() {
+        return (List<Execution>) implementationExecutions;
+    }
+    @Override
     public String printTree(String offset) {
         StringBuilder tree = new StringBuilder();
 //        tree.append(offset);

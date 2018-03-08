@@ -24,6 +24,11 @@ public class MethodExecution extends Execution {
     }
 
     @Override
+    public  List<Execution> getChildren() {
+        return executions;
+    }
+
+    @Override
     public String toString() {
         return getCallExpression();
     }
