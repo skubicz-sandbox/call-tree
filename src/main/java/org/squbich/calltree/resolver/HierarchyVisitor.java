@@ -11,6 +11,7 @@ import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.resolution.types.ResolvedType;
 import com.google.common.collect.Lists;
+
 import org.squbich.calltree.model.code.ClassDescriptor;
 import org.squbich.calltree.model.code.Method;
 import org.squbich.calltree.model.code.QualifiedName;
@@ -19,45 +20,65 @@ import org.squbich.calltree.model.executions.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import lombok.extern.slf4j.Slf4j;
 //import com.github.javaparser.symbolsolver.model.declarations.ReferenceTypeDeclaration;
 //import com.github.javaparser.symbolsolver.model.typesystem.Type;
 
 /**
  * Created by Szymon on 2017-07-23.
  */
+@Slf4j
 public class HierarchyVisitor extends GenericVisitorAdapter<List<Execution>, Object> {
     private TypeResolver typeResolver;
+    private String allowedPackagePattern;
 
-    public HierarchyVisitor(final TypeResolver typeResolver) {
+    public HierarchyVisitor(final TypeResolver typeResolver, String allowedPackagePattern) {
         this.typeResolver = typeResolver;
+        this.allowedPackagePattern = allowedPackagePattern;
     }
 
     @Override
     public List<Execution> visit(MethodCallExpr methodCall, Object arg) {
         String callExpression = methodCall.toString();
-        System.out.println("Method call: " + callExpression);
+        //   System.out.println("Method call: " + callExpression);
 
+
+        // wywołanie metody może zawierać inne wywołanie, np. root.foo(root2.foo())
+        List<Execution> childrenExecutions = new ArrayList<>();
+        methodCall.getChildNodes().forEach(node -> {
+            List<Execution> executions = node.accept(this, arg);
+            if (executions != null) {
+                childrenExecutions.addAll(executions);
+            }
+        });
+
+        List<Execution> methodExecutions = new ArrayList<>();
+        methodExecutions.addAll(childrenExecutions);
 
         Method currentMethod = typeResolver.findMethod(methodCall);
         if (currentMethod == null) {
-            return Lists.newArrayList(MethodExecution.builder().callExpression(callExpression).build());
+            methodExecutions.add(MethodExecution.builder().callExpression(callExpression).build());
+            return methodExecutions;
         }
 
         ResolvedReferenceTypeDeclaration callerClass = typeResolver.findMethodCallerType(methodCall);
 
         if (callerClass == null || !allowedType(callerClass)) {
-            Execution methodExecution = MethodExecution.builder().method(currentMethod).callExpression(callExpression).build();
-            return Lists.newArrayList(methodExecution);
+            Execution methodExecution = MethodExecution.builder().executions(new ArrayList<>(methodExecutions)).method(currentMethod)
+                    .callExpression(callExpression).build();
+            methodExecutions.add(methodExecution);
+            return methodExecutions;
         }
 
         if (callerClass.isInterface()) {
-            List<Execution> methodExecutions = findMethodImplementationsExecutions(callExpression, currentMethod);
-            return methodExecutions;
-        } else {
-            List<Execution> methodExecutions = findMethodExecutions(methodCall, currentMethod);
-            return methodExecutions;
+            methodExecutions.addAll(findMethodImplementationsExecutions(callExpression, currentMethod));
+        }
+        else {
+            methodExecutions.addAll(findMethodExecutions(methodCall, currentMethod));
         }
 
+        return methodExecutions;
 
     }
 
@@ -67,7 +88,7 @@ public class HierarchyVisitor extends GenericVisitorAdapter<List<Execution>, Obj
         for (final Object v : n) {
             List<Execution> executions = ((Node) v).accept(this, arg);
             if (executions != null) {
-                if(results == null) {
+                if (results == null) {
                     results = new ArrayList<>();
                 }
                 results.addAll(executions);
@@ -81,13 +102,10 @@ public class HierarchyVisitor extends GenericVisitorAdapter<List<Execution>, Obj
         if (methodDeclaration == null) {
             return Lists.newArrayList();
         }
-        System.out.println("currentMethod: " + methodDeclaration.getName());
-        List<Execution> obj = methodDeclaration.accept(this, null);
+        log.info("findMethodExecutions: processing method: " + methodDeclaration.getName());
+        List<Execution> obj = methodDeclaration.accept(this, currentMethod);
 
-        Execution methodExecution = MethodExecution.builder()
-                .method(currentMethod)
-                .callExpression(methodCall.toString())
-                .executions(obj)
+        Execution methodExecution = MethodExecution.builder().method(currentMethod).callExpression(methodCall.toString()).executions(obj)
                 .build();
         return Lists.newArrayList(methodExecution);
     }
@@ -100,29 +118,23 @@ public class HierarchyVisitor extends GenericVisitorAdapter<List<Execution>, Obj
                 List<Execution> executions = methodDeclaration.accept(this, null);
 
                 Method implementationMethod = typeResolver.toMethod(methodDeclaration);
-                Execution implementationMethodExecution = ImplementationOfAbstractMethodExecution.builder()
-                        .implementedMethod(currentMethod)
-                        .method(implementationMethod)
-                        .callExpression(callExpression)
-                        .executions(executions)
-                        .build();
+                Execution implementationMethodExecution = ImplementationOfAbstractMethodExecution.builder().implementedMethod(currentMethod)
+                        .method(implementationMethod).callExpression(callExpression).executions(executions).build();
                 implementationMethodExecutions.add(implementationMethodExecution);
 
             });
         }
-        Execution methodExecution = AbstractMethodExecution.builder()
-                .method(currentMethod)
-                .callExpression(callExpression)
-                .implementationExecutions(implementationMethodExecutions)
-                .build();
+        Execution methodExecution = AbstractMethodExecution.builder().method(currentMethod).callExpression(callExpression)
+                .implementationExecutions(implementationMethodExecutions).build();
 
-        System.out.println(methodDeclarations);
+        //System.out.println(methodDeclarations);
 
         return Lists.newArrayList(methodExecution);
     }
 
     private boolean allowedType(ResolvedReferenceTypeDeclaration callerClass) {
-        return callerClass.getPackageName().startsWith("org.sk");
+        return callerClass.getPackageName().startsWith(allowedPackagePattern);
+        //    return callerClass.getPackageName().startsWith("org.sk");
     }
 
 }

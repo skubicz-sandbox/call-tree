@@ -1,5 +1,7 @@
 package org.squbich.calltree.model.code;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -7,25 +9,32 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.squbich.calltree.browser.JsonFilters;
+
+import com.fasterxml.jackson.annotation.JsonFilter;
+
 /**
  * Created by Szymon on 2017-07-29.
  */
 @Getter
 @Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@JsonFilter(JsonFilters.METHOD)
 public class Method {
     private ClassDescriptor parentClass;
     private List<QualifiedName> parameters;
+    private List<QualifiedName> annotations;
     private QualifiedName returnType;
     private String comment;
     private String name;
 
-    private Method(ClassDescriptor parentClass, List<QualifiedName> parameters, QualifiedName returnType, String comment, String name) {
-        this.parentClass = parentClass;
-        this.parameters = parameters;
-        this.returnType = returnType == null ? QualifiedName.builder().namePart("void").build() : returnType;
-        this.comment = comment;
-        this.name = name;
-    }
+//    private Method(ClassDescriptor parentClass, List<QualifiedName> parameters, QualifiedName returnType, String comment, String name) {
+//        this.parentClass = parentClass;
+//        this.parameters = parameters;
+//        this.returnType = returnType == null ? QualifiedName.builder().namePart("void").build() : returnType;
+//        this.comment = comment;
+//        this.name = name;
+//    }
 
     public static class MethodBuilder {
 
@@ -60,7 +69,8 @@ public class Method {
     @Override
     public String toString() {
         // != null ? returnType : "void")
-        return returnType + " " + parentClass.toString() + "." + name + "(" + (parameters != null ? parameters.toString() : "") + ")";
+        return String.valueOf(returnType) + " " + String.valueOf(parentClass) + "." + name + "(" + (parameters != null ? parameters
+                .toString() : "") + ")";
     }
 
 }

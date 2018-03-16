@@ -1,8 +1,10 @@
 package org.squbich.calltree.model.code;
 
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -10,22 +12,14 @@ import java.util.Objects;
  */
 @Builder
 @Getter
+@EqualsAndHashCode
 public class ClassDescriptor {
     private QualifiedName qualifiedName;
+    private List<QualifiedName> annotations;
     private String comment;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ClassDescriptor that = (ClassDescriptor) o;
-        return Objects.equals(qualifiedName, that.qualifiedName);
-    }
-
-    @Override
-    public int hashCode() {
-
-        return Objects.hash(qualifiedName);
+    public boolean isEquals(QualifiedName qualifiedName) {
+        return this.qualifiedName.equals(qualifiedName);
     }
 
     @Override

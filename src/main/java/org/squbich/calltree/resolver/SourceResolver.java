@@ -15,9 +15,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * Created by Szymon on 2017-07-26.
  */
+@Slf4j
 public class SourceResolver {
 
 
@@ -92,7 +95,7 @@ public class SourceResolver {
             javaFile = compilationUnitToJavaFile(cu);
         }
         catch (FileNotFoundException e) {
-            e.printStackTrace();
+            log.warn(e.getLocalizedMessage());
         }
         FileSourceAggregate fileSourceAggregate = new FileSourceAggregate(file.getAbsolutePath(), javaFile);
 
@@ -101,24 +104,34 @@ public class SourceResolver {
 
 
     private JavaFile compilationUnitToJavaFile(final CompilationUnit compilationUnit) {
-        QualifiedName qualifiedName = retrieveQualifiedName(compilationUnit);
+        try {
+            QualifiedName qualifiedName = retrieveQualifiedName(compilationUnit);
 
-        Optional<Comment> commentOptional = compilationUnit.getType(0).getComment();
-        String comment = "";
-        if(commentOptional.isPresent()) {
-            comment = commentOptional.get().getContent();
+            Optional<Comment> commentOptional = compilationUnit.getType(0).getComment();
+            String comment = "";
+            if (commentOptional.isPresent()) {
+                comment = commentOptional.get().getContent();
+            }
+
+            JavaFile javaFile = JavaFile.builder().qualifiedName(qualifiedName).comment(comment).build();
+            return javaFile;
+        } catch (Exception e) {
+            log.warn(e.getLocalizedMessage());
+            return null;
         }
-
-        JavaFile javaFile = JavaFile.builder().qualifiedName(qualifiedName).comment(comment).build();
-        return javaFile;
     }
 
     private QualifiedName retrieveQualifiedName(final CompilationUnit compilationUnit) {
-        String className = compilationUnit.getType(0).getName().asString();
-        String packageName = compilationUnit.getPackageDeclaration().get().getNameAsString();
-        String qualifiedName = packageName + "." + className;
+        try {
+            String className = compilationUnit.getType(0).getName().asString();
+            String packageName = compilationUnit.getPackageDeclaration().get().getNameAsString();
+            String qualifiedName = packageName + "." + className;
 
-        return QualifiedName.of(qualifiedName);
+            return QualifiedName.of(qualifiedName);
+        } catch (Exception e) {
+            log.warn(e.getLocalizedMessage());
+            return null;
+        }
     }
 
 }

@@ -2,15 +2,20 @@ package org.squbich.calltree.model.executions;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+
+import org.squbich.calltree.browser.JsonFilters;
 import org.squbich.calltree.model.code.QualifiedName;
 
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFilter;
 
 /**
  * Created by Szymon on 2017-07-29.
  */
 @Getter
 @AllArgsConstructor
+@JsonFilter(JsonFilters.CLASS_ROOT)
 public class ClassRoot {
     public static final String IDENT = "    ";
     private QualifiedName className;

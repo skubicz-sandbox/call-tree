@@ -2,6 +2,8 @@ package org.squbich.calltree.model.executions;
 
 import lombok.Builder;
 import lombok.Getter;
+
+import org.apache.commons.lang3.StringUtils;
 import org.squbich.calltree.model.code.Method;
 
 import java.util.List;
@@ -9,10 +11,10 @@ import java.util.List;
 /**
  * Created by Szymon on 2017-07-29.
  */
-@Getter
+//@Getter
 public class MethodExecution extends Execution {
 //    private String callExpression;
-    private Method method;
+//    private Method method;
     private List<Execution> executions;
 
     @Builder
@@ -20,7 +22,7 @@ public class MethodExecution extends Execution {
         super(callExpression, method);
         this.executions = executions;
 //        this.callExpression = callExpression;
-        this.method = method;
+ //       this.method = method;
     }
 
     @Override
@@ -38,9 +40,9 @@ public class MethodExecution extends Execution {
         StringBuilder tree = new StringBuilder();
         tree.append(offset);
         //    tree.append(method);
-        tree.append(getCallExpression());
-        if (getExecutions() != null) {
-            getExecutions().forEach(execution -> {
+        tree.append(StringUtils.deleteWhitespace(getCallExpression()));
+        if (getChildren() != null) {
+            getChildren().forEach(execution -> {
                 tree.append("\n");
             //    tree.append(offset);
                 tree.append(execution.printTree(offset + ClassRoot.IDENT));
