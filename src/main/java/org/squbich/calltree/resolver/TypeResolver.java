@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -20,6 +21,7 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.comments.Comment;
+import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
@@ -157,8 +159,8 @@ public class TypeResolver {
             ResolvedType resolvedReturnType = getJavaParserFacade().convertToUsage(methodDeclaration.getType());
             ResolvedReferenceTypeDeclaration callerType = getJavaParserFacade().getTypeDeclaration(methodDeclaration.getParentNode().get());
             ClassOrInterfaceDeclaration parent = toClassOrInterfaceDeclaration(callerType);
-            String classComment = parent.getComment().map(Comment::toString).orElse("");
-            String methodComment = methodDeclaration.getComment().map(Comment::toString).orElse("");
+            String classComment = commentAsText(parent.getComment());
+            String methodComment = commentAsText(methodDeclaration.getComment());
 
             ClassDescriptor parentClass = ClassDescriptor.builder()
                     .qualifiedName(QualifiedName.of(callerType.asReferenceType().getQualifiedName()))
@@ -177,6 +179,23 @@ public class TypeResolver {
         }
     }
 
+    public String commentAsText(Optional<Comment> optionalComment) {
+        return optionalComment.map(this::commentAsText).orElse("");
+    }
+
+    public String commentAsText(Comment comment) {
+        if(comment == null) {
+            return null;
+        }
+
+        String textComment = null;
+        if(comment.isJavadocComment()) {
+            textComment = ((JavadocComment)comment).parse().getDescription().toText();
+        } else {
+            textComment = comment.toString();
+        }
+        return textComment;
+    }
 
     public List<MethodDeclaration> findImplementationMethod(final Method method) {
         List<JavaFile> implementations = findImplementations(method.getParentClass().getQualifiedName());

@@ -1,10 +1,10 @@
-package org.squbich.calltree.model.executions;
+package org.squbich.calltree.model.calls;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import org.squbich.calltree.browser.ExecutionBrowser;
-import org.squbich.calltree.browser.JsonFilters;
+import org.squbich.calltree.filter.CallFilters;
+import org.squbich.calltree.serialize.JsonFilters;
 import org.squbich.calltree.model.code.Method;
 
 import java.util.List;
@@ -17,23 +17,23 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 @Getter
 @AllArgsConstructor
 @JsonFilter(JsonFilters.METHOD_ROOT)
-public class MethodRoot {
+public class MethodCaller {
     private Method method;
-    private List<Execution> executions;
+    private List<MethodCall> calls;
 
-    public ExecutionBrowser browser() {
-        return ExecutionBrowser.of(executions);
+    public CallFilters browser() {
+        return CallFilters.of(calls);
     }
 
     public String printTree(String offset) {
         StringBuilder tree = new StringBuilder();
         tree.append(offset);
         tree.append(method);
-        if (executions != null) {
-            executions.forEach(execution -> {
+        if (calls != null) {
+            calls.forEach(execution -> {
                 tree.append("\n");
              //   tree.append(offset);
-                tree.append(execution.printTree(offset + ClassRoot.IDENT));
+                tree.append(execution.printTree(offset + ClassCaller.IDENT));
              //   tree.append("\n");
             });
         }

@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import org.squbich.calltree.browser.JsonFilters;
+import org.squbich.calltree.serialize.JsonFilters;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 

@@ -1,4 +1,4 @@
-package org.squbich.calltree.browser;
+package org.squbich.calltree.serialize;
 
 public class JsonFilters {
     public static final String METHOD = "methodFilter";

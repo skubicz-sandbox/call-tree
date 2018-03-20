@@ -1,9 +1,9 @@
-package org.squbich.calltree.model.executions;
+package org.squbich.calltree.model.calls;
 
 import lombok.Getter;
 
 import org.apache.commons.lang3.StringUtils;
-import org.squbich.calltree.browser.JsonFilters;
+import org.squbich.calltree.serialize.JsonFilters;
 import org.squbich.calltree.model.code.Method;
 
 import java.util.List;
@@ -15,23 +15,23 @@ import com.fasterxml.jackson.annotation.JsonFilter;
  */
 @Getter
 @JsonFilter(JsonFilters.EXECUTION)
-public abstract class Execution implements Executable {
-    private String callExpression;
+public abstract class MethodCall {
+    private String expression;
     private Method method;
+    private List<MethodCall> children;
 
-    public Execution(String callExpression, Method method) {
-        this.callExpression = callExpression;
+    public MethodCall(String expression, Method method, List<MethodCall> children) {
+        this.expression = expression;
         this.method = method;
+        this.children = children;
     }
 
     public String printTree(String offset) {
-        return offset + StringUtils.deleteWhitespace(callExpression);
+        return offset + StringUtils.deleteWhitespace(expression);
     }
-
-    public abstract List<Execution> getChildren();
 
     @Override
     public String toString() {
-        return callExpression;
+        return expression;
     }
 }

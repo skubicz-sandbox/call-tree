@@ -1,9 +1,9 @@
-package org.squbich.calltree.model.executions;
+package org.squbich.calltree.model.calls;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import org.squbich.calltree.browser.JsonFilters;
+import org.squbich.calltree.serialize.JsonFilters;
 import org.squbich.calltree.model.code.QualifiedName;
 
 import java.util.List;
@@ -16,10 +16,10 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 @Getter
 @AllArgsConstructor
 @JsonFilter(JsonFilters.CLASS_ROOT)
-public class ClassRoot {
+public class ClassCaller {
     public static final String IDENT = "    ";
     private QualifiedName className;
-    private List<MethodRoot> methods;
+    private List<MethodCaller> methods;
 
     public String printTree(String offset) {
         StringBuilder tree = new StringBuilder();
@@ -27,9 +27,9 @@ public class ClassRoot {
         tree.append(className);
         tree.append("\n");
         if (methods != null) {
-            methods.forEach(methodRoot -> {
+            methods.forEach(methodCaller -> {
             //    tree.append(offset);
-                tree.append(methodRoot.printTree(offset + IDENT));
+                tree.append(methodCaller.printTree(offset + IDENT));
              //   tree.append("\n");
             });
         }

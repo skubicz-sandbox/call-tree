@@ -1,139 +1,135 @@
 package org.squbich.calltree.resolver;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.squbich.calltree.model.calls.MethodCall;
+import org.squbich.calltree.model.code.Method;
+import org.squbich.calltree.model.calls.AbstractMethodCall;
+import org.squbich.calltree.model.calls.ImplementationOfAbstractMethodCall;
+import org.squbich.calltree.model.calls.DirectMethodCall;
+
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.expr.BinaryExpr;
-import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
-import com.github.javaparser.resolution.types.ResolvedType;
 import com.google.common.collect.Lists;
 
-import org.squbich.calltree.model.code.ClassDescriptor;
-import org.squbich.calltree.model.code.Method;
-import org.squbich.calltree.model.code.QualifiedName;
-import org.squbich.calltree.model.executions.*;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import lombok.extern.slf4j.Slf4j;
-//import com.github.javaparser.symbolsolver.model.declarations.ReferenceTypeDeclaration;
-//import com.github.javaparser.symbolsolver.model.typesystem.Type;
 
 /**
  * Created by Szymon on 2017-07-23.
  */
 @Slf4j
-public class HierarchyVisitor extends GenericVisitorAdapter<List<Execution>, Object> {
+public class HierarchyVisitor extends GenericVisitorAdapter<List<MethodCall>, Object> {
     private TypeResolver typeResolver;
-    private String allowedPackagePattern;
+    /**
+     * Base package to search method execution. Methods from different packages are not analyze recursive - they are end of the search.
+     */
+    private String packageScan;
 
-    public HierarchyVisitor(final TypeResolver typeResolver, String allowedPackagePattern) {
+    public HierarchyVisitor(final TypeResolver typeResolver, String packageScan) {
         this.typeResolver = typeResolver;
-        this.allowedPackagePattern = allowedPackagePattern;
+        this.packageScan = packageScan;
     }
 
     @Override
-    public List<Execution> visit(MethodCallExpr methodCall, Object arg) {
+    public List<MethodCall> visit(MethodCallExpr methodCall, Object arg) {
         String callExpression = methodCall.toString();
         //   System.out.println("Method call: " + callExpression);
 
-
         // wywołanie metody może zawierać inne wywołanie, np. root.foo(root2.foo())
-        List<Execution> childrenExecutions = new ArrayList<>();
+        List<MethodCall> childrenCalls = new ArrayList<>();
         methodCall.getChildNodes().forEach(node -> {
-            List<Execution> executions = node.accept(this, arg);
-            if (executions != null) {
-                childrenExecutions.addAll(executions);
+            List<MethodCall> calls = node.accept(this, arg);
+            if (calls != null) {
+                childrenCalls.addAll(calls);
             }
         });
 
-        List<Execution> methodExecutions = new ArrayList<>();
-        methodExecutions.addAll(childrenExecutions);
+        List<MethodCall> methodCalls = new ArrayList<>();
+        methodCalls.addAll(childrenCalls);
 
         Method currentMethod = typeResolver.findMethod(methodCall);
         if (currentMethod == null) {
-            methodExecutions.add(MethodExecution.builder().callExpression(callExpression).build());
-            return methodExecutions;
+            methodCalls.add(DirectMethodCall.builder().expression(callExpression).build());
+            return methodCalls;
         }
 
         ResolvedReferenceTypeDeclaration callerClass = typeResolver.findMethodCallerType(methodCall);
 
         if (callerClass == null || !allowedType(callerClass)) {
-            Execution methodExecution = MethodExecution.builder().executions(new ArrayList<>(methodExecutions)).method(currentMethod)
-                    .callExpression(callExpression).build();
-            methodExecutions.add(methodExecution);
-            return methodExecutions;
+            MethodCall methodExecution = DirectMethodCall.builder().children(new ArrayList<>(methodCalls)).method(currentMethod)
+                    .expression(callExpression).build();
+            methodCalls.add(methodExecution);
+            return methodCalls;
         }
 
         if (callerClass.isInterface()) {
-            methodExecutions.addAll(findMethodImplementationsExecutions(callExpression, currentMethod));
+            methodCalls.addAll(findMethodImplementationsExecutions(callExpression, currentMethod));
         }
         else {
-            methodExecutions.addAll(findMethodExecutions(methodCall, currentMethod));
+            methodCalls.addAll(findMethodCalls(methodCall, currentMethod));
         }
 
-        return methodExecutions;
+        return methodCalls;
 
     }
 
     @Override
-    public List<Execution> visit(NodeList n, Object arg) {
-        List<Execution> results = null;
+    public List<MethodCall> visit(NodeList n, Object arg) {
+        List<MethodCall> results = null;
         for (final Object v : n) {
-            List<Execution> executions = ((Node) v).accept(this, arg);
-            if (executions != null) {
+            List<MethodCall> calls = ((Node) v).accept(this, arg);
+            if (calls != null) {
                 if (results == null) {
                     results = new ArrayList<>();
                 }
-                results.addAll(executions);
+                results.addAll(calls);
             }
         }
         return results;
     }
 
-    private List<Execution> findMethodExecutions(MethodCallExpr methodCall, Method currentMethod) {
+    private List<MethodCall> findMethodCalls(MethodCallExpr methodCall, Method currentMethod) {
         MethodDeclaration methodDeclaration = typeResolver.findMethodDeclaration(methodCall);
         if (methodDeclaration == null) {
             return Lists.newArrayList();
         }
-        log.info("findMethodExecutions: processing method: " + methodDeclaration.getName());
-        List<Execution> obj = methodDeclaration.accept(this, currentMethod);
+        log.info("findMethodCalls: processing method: " + methodDeclaration.getName());
+        List<MethodCall> obj = methodDeclaration.accept(this, currentMethod);
 
-        Execution methodExecution = MethodExecution.builder().method(currentMethod).callExpression(methodCall.toString()).executions(obj)
+        MethodCall methodExecution = DirectMethodCall.builder().method(currentMethod).expression(methodCall.toString()).children(obj)
                 .build();
         return Lists.newArrayList(methodExecution);
     }
 
-    private List<Execution> findMethodImplementationsExecutions(String callExpression, Method currentMethod) {
-        List<Execution> implementationMethodExecutions = new ArrayList<>();
+    private List<MethodCall> findMethodImplementationsExecutions(String callExpression, Method currentMethod) {
+        List<MethodCall> implementationMethodCalls = new ArrayList<>();
         List<MethodDeclaration> methodDeclarations = typeResolver.findImplementationMethod(currentMethod);
         if (methodDeclarations != null) {
             methodDeclarations.forEach(methodDeclaration -> {
-                List<Execution> executions = methodDeclaration.accept(this, null);
+                List<MethodCall> calls = methodDeclaration.accept(this, null);
 
                 Method implementationMethod = typeResolver.toMethod(methodDeclaration);
-                Execution implementationMethodExecution = ImplementationOfAbstractMethodExecution.builder().implementedMethod(currentMethod)
-                        .method(implementationMethod).callExpression(callExpression).executions(executions).build();
-                implementationMethodExecutions.add(implementationMethodExecution);
+                MethodCall implementationMethodCall = ImplementationOfAbstractMethodCall.builder().implementedMethod(currentMethod)
+                        .method(implementationMethod).expression(callExpression).children(calls).build();
+                implementationMethodCalls.add(implementationMethodCall);
 
             });
         }
-        Execution methodExecution = AbstractMethodExecution.builder().method(currentMethod).callExpression(callExpression)
-                .implementationExecutions(implementationMethodExecutions).build();
+        MethodCall methodCall = AbstractMethodCall.builder().method(currentMethod).expression(callExpression)
+                .implementationCalls(implementationMethodCalls).build();
 
         //System.out.println(methodDeclarations);
 
-        return Lists.newArrayList(methodExecution);
+        return Lists.newArrayList(methodCall);
     }
 
     private boolean allowedType(ResolvedReferenceTypeDeclaration callerClass) {
-        return callerClass.getPackageName().startsWith(allowedPackagePattern);
+        return callerClass.getPackageName().startsWith(packageScan);
         //    return callerClass.getPackageName().startsWith("org.sk");
     }
 

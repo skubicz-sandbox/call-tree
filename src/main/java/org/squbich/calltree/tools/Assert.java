@@ -13,7 +13,7 @@ public abstract class Assert {
     /**
      * Assert a boolean expression, throwing an {@code IllegalStateException}
      * if the expression evaluates to {@code false}.
-     * <p>Call {@link #isTrue} if you wish to throw an {@code IllegalArgumentException}
+     * <p>MethodCall {@link #isTrue} if you wish to throw an {@code IllegalArgumentException}
      * on an assertion failure.
      * <pre class="code">Assert.state(id == null, "The id property must not already be initialized");</pre>
      * @param expression a boolean expression
