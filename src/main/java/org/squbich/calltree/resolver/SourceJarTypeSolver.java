@@ -70,9 +70,9 @@ public class SourceJarTypeSolver implements TypeSolver {
 //            throw new RuntimeException(e);
 //        }
         JarFile jarFile = new JarFile(pathToJar);
-        JarEntry entry = null;
-        for (Enumeration<JarEntry> e = jarFile.entries(); e.hasMoreElements(); entry =
-                e.nextElement()) {
+        Enumeration<JarEntry> e = jarFile.entries();
+        while(e.hasMoreElements()) {
+            JarEntry entry = e.nextElement();
             System.out.println(entry);
             if (entry != null && !entry.isDirectory() && entry.getName().endsWith(".java")) {
                 String name = entryPathToClassName(entry.getName());

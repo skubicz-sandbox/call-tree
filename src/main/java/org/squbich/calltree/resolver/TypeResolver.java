@@ -337,11 +337,13 @@ public class TypeResolver {
                 return;
             }
 
+            System.out.println("resolve: " + source.getQualifiedName().getPackagePart() + ", packageName: " + packageName);
             if(source.getQualifiedName().getPackagePart().startsWith(packageName)) {
                 classes.add(source);
             }
         });
 
+        System.out.println("resolve: " + classes);
         return classes;
     }
 

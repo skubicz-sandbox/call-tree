@@ -29,6 +29,7 @@ public class CallHierarchyResolver {
 
     public CallHierarchy resolveHierarchy(final String packageName) {
         List<JavaFile> classes = typeResolver.findClassesInPackage(packageName);
+        System.out.println("resolve: " + classes);
 
         List<ClassCaller> classCallers = classes.stream().map(this::resolve).filter(Objects::nonNull).collect(Collectors.toList());
 
@@ -40,6 +41,7 @@ public class CallHierarchyResolver {
     }
 
     private ClassCaller resolve(final JavaFile javaFile) {
+        System.out.println("resolve: " + javaFile);
         try {
             ClassOrInterfaceDeclaration declaration = typeResolver.toDeclaration(javaFile);
             List<MethodCaller> methods = new ArrayList<>();

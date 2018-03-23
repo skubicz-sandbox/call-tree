@@ -12,7 +12,12 @@ import org.squbich.calltree.model.calls.DirectMethodCall;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.ForStmt;
+import com.github.javaparser.ast.stmt.IfStmt;
+import com.github.javaparser.ast.stmt.TryStmt;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.google.common.collect.Lists;
@@ -42,6 +47,7 @@ public class HierarchyVisitor extends GenericVisitorAdapter<List<MethodCall>, Ob
 
         // wywołanie metody może zawierać inne wywołanie, np. root.foo(root2.foo())
         List<MethodCall> childrenCalls = new ArrayList<>();
+       // getChildrenWithoutArguments(methodCall).forEach(node -> {
         methodCall.getChildNodes().forEach(node -> {
             List<MethodCall> calls = node.accept(this, arg);
             if (calls != null) {
@@ -49,19 +55,27 @@ public class HierarchyVisitor extends GenericVisitorAdapter<List<MethodCall>, Ob
             }
         });
 
+        List<MethodCall> argumentsCalls = new ArrayList<>();
+//        methodCall.getArguments().forEach(node -> {
+//            List<MethodCall> calls = node.accept(this, arg);
+//            if (calls != null) {
+//                argumentsCalls.addAll(calls);
+//            }
+//        });
+
         List<MethodCall> methodCalls = new ArrayList<>();
         methodCalls.addAll(childrenCalls);
 
         Method currentMethod = typeResolver.findMethod(methodCall);
         if (currentMethod == null) {
-            methodCalls.add(DirectMethodCall.builder().expression(callExpression).build());
+            methodCalls.add(DirectMethodCall.builder().expression(callExpression).children(argumentsCalls).build());
             return methodCalls;
         }
 
         ResolvedReferenceTypeDeclaration callerClass = typeResolver.findMethodCallerType(methodCall);
 
         if (callerClass == null || !allowedType(callerClass)) {
-            MethodCall methodExecution = DirectMethodCall.builder().children(new ArrayList<>(methodCalls)).method(currentMethod)
+            MethodCall methodExecution = DirectMethodCall.builder().children(new ArrayList<>(argumentsCalls)).method(currentMethod)
                     .expression(callExpression).build();
             methodCalls.add(methodExecution);
             return methodCalls;
@@ -78,10 +92,40 @@ public class HierarchyVisitor extends GenericVisitorAdapter<List<MethodCall>, Ob
 
     }
 
+    private List<Node> getChildrenWithoutArguments(MethodCallExpr methodCall) {
+        if(methodCall.getChildNodes() == null || methodCall.getChildNodes().isEmpty()) {
+            return new ArrayList<>();
+        }
+        return methodCall.getChildNodes().subList(0, methodCall.getChildNodes().size() - methodCall.getArguments().size());
+    }
+
     @Override
     public List<MethodCall> visit(NodeList n, Object arg) {
+        List<MethodCall> results = visitNodes(n, arg);
+        return results;
+    }
+
+    @Override
+    public List<MethodCall> visit(ForStmt n, Object arg) {
+        List<MethodCall> results = visitNodes(n.getChildNodes(), arg);
+        return results;
+    }
+
+    @Override
+    public List<MethodCall> visit(IfStmt n, Object arg) {
+        List<MethodCall> results = visitNodes(n.getChildNodes(), arg);
+        return results;
+    }
+
+    @Override
+    public List<MethodCall> visit(TryStmt n, Object arg) {
+        List<MethodCall> results = visitNodes(n.getChildNodes(), arg);
+        return results;
+    }
+
+    public List<MethodCall> visitNodes(List<Node> nodes, Object arg) {
         List<MethodCall> results = null;
-        for (final Object v : n) {
+        for (final Object v : nodes) {
             List<MethodCall> calls = ((Node) v).accept(this, arg);
             if (calls != null) {
                 if (results == null) {
